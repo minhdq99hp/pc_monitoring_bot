@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "server/env/bin/python",
+    "python.analysis.extraPaths": ["./server"],
+    "python.linting.pylintArgs": [
+        "--load-plugins=pylint_django", "--errors-only",
+        "--disable=django-not-configured",
+        "--django-settings-module=project.settings",
+    ]
+}
