@@ -1,7 +1,46 @@
 import logging
+import json
+import requests
+import subprocess
 from django.conf import settings
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from api.models import *
+
+AGENT_API_URL = settings.AGENT_API_URL
+
+def get_pc_status():
+    url = f'{AGENT_API_URL}/pc/status'
+
+    try:
+        res = requests.get(url)
+        res.raise_for_status()
+        return json.dumps(res.content)['status']
+    except Exception as e:
+        return {
+            'status': 1,
+            'detail': str(e)
+        }
+
+
+def turnon_pc():
+    subprocess.run(['wakeonlan', settings.PC_MAC_ADDRESS])
+
+
+def turnoff_pc():
+    url = f'{AGENT_API_URL}/pc/turnoff'
+
+    try:
+        res = requests.post(url)
+        res.raise_for_status()
+        return {
+            'status': 0,
+        }
+    except Exception as e:
+        return {
+            'status': 1,
+            'detail': str(e)
+        }
+
 
 class PCMonitoringBot:
     """Telegram Bot for monitoring PC"""
@@ -43,21 +82,39 @@ class PCMonitoringBot:
         return [] if len(message) < 2 or not message[0].startswith('/') else message[1:] 
 
     def start(self, update, context):
+        """Response with user chat ID"""
+
         update.message.reply_text(f"Hi, I'm PC Monitoring Bot. Your chat id is: {update.effective_user.id}")
 
     def status(self, update, context):
+        """Get the status of the PC"""
 
-        update.message.reply_text('PC is [UNDEFINED]')
-        pass
+        res = get_pc_status()
+
+        if res['status'] != 0:
+            update.message.reply_text(res['detail'])
+            return
+        update.message.reply_text(f"PC is {res['pc_status']}")
 
     def turnon(self, update, context):
-        
-        update.message.reply_text('PC has woken up.')
+        """Send request to turn on the PC"""
+
+        turnon_pc()
+        update.message.reply_text('I have sent request to turn on the PC.')
 
     def poweroff(self, update, context):
+        """Send request to turn off the PC"""
+        if update.effective_user.id != settings.TELEGRAM_MASTER_ID:
+            update.message.reply_text("You don't have permission to perform this action.")
+            return
 
-        update.message.reply_text('PC is shutting down.')
-        pass
+        res = turnoff_pc()
+
+        if res['status'] != 0:
+            update.message.reply_text(res['detail'])
+            return
+
+        update.message.reply_text('I have sent request to turn off the PC.')
     
     def list(self, update, context):
         """List all groups and users"""
@@ -219,7 +276,7 @@ class PCMonitoringBot:
         
         update.message.reply_text('OK')
             
-    def send_message(self, chat_id=None, message='nothing', attachment_path=''):
+    def send_message(self, chat_id=None, message='', attachment_path=''):
         '''Send message actively'''
         if not chat_id:
             chat_id = settings.TELEGRAM_MASTER_ID

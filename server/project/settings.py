@@ -18,18 +18,20 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(os.path.join(BASE_DIR, '.env_files', 'server.env'))
+load_dotenv(os.path.join(os.path.dirname(BASE_DIR), '.env_files', 'server.env'))
 
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 TELEGRAM_MASTER_ID = int(os.environ['TELEGRAM_MASTER_ID'])
 TELEGRAM_MASTER_USERNAME = os.environ['TELEGRAM_MASTER_USERNAME']
+
+AGENT_API_URL = os.environ['AGENT_API_URL']
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'uj%=&)tabw#m*3_+#woh&_5*1#h!i1im^%tb_-+rvy9w(!u480'
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'true').lower() in ('true', '1')
@@ -147,3 +149,4 @@ REST_FRAMEWORK = {
     ),
 }
 
+DEFAULT_AUTO_FIELD='django.db.models.AutoField'
